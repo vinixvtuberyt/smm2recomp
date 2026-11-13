@@ -45,14 +45,13 @@ jobs:
             cp -r romfs_extracted/exefs/* build/exefs/
           fi
 
-      - name: Compile Android APK
-        run: |
-          echo "A localizar a pasta exata do CMakeLists.txt..."
-          CMAKE_DIR=$(dirname $(find . -name "CMakeLists.txt" -not -path "*/.*" | head -n 1))
-          echo "Encontrado em: $CMAKE_DIR"
+            - name: Compile Android APK
+       run: |
+          echo "A listar a estrutura da raiz para encontrar o projeto..."
+          ls -la
           
           echo "A iniciar a compilação..."
-          cmake -B build -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j$(nproc)
           
           find build -name "*.apk" -exec cp {} ./ \;
