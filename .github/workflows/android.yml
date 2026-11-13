@@ -1,0 +1,65 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository with Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Environment & Dependencies
+        run: |
+          echo "A configurar o ambiente de compilação..."
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential
+
+      - name: Download and Extract ROM Assets from Google Drive
+        env:
+          ROM_ASSETS_URL: ${{ secrets.ROM_ASSETS_URL }}
+        run: |
+          echo "A descarregar os assets do Google Drive..."
+          mkdir -p rom_download romfs_extracted
+          
+          curl -L -o rom_download/smm2.zip "$ROM_ASSETS_URL"
+          
+          echo "A extrair o ficheiro .zip..."
+          unzip -q rom_download/smm2.zip -d romfs_extracted/
+          
+          if [ -d "romfs_extracted/smm2_assets/exefs" ]; then
+            mv romfs_extracted/smm2_assets/* romfs_extracted/
+          fi
+          
+          mkdir -p build/romfs build/exefs
+          if [ -d "romfs_extracted/romfs" ]; then
+            cp -r romfs_extracted/romfs/* build/romfs/
+          fi
+          if [ -d "romfs_extracted/exefs" ]; then
+            cp -r romfs_extracted/exefs/* build/exefs/
+          fi
+
+      - name: Compile Android APK
+        run: |
+          echo "A verificar onde está o CMakeLists.txt..."
+          find . -name "CMakeLists.txt"
+          
+          echo "A iniciar a compilação..."
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
+          
+          find build -name "*.apk" -exec cp {} ./ \;
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smm2-android-apk
+          path: |
+            *.apk
+            build/**/*.apk
