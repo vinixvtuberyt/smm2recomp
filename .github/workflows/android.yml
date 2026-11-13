@@ -47,11 +47,18 @@ jobs:
 
       - name: Compile Android APK
         run: |
-          echo "A procurar onde está o CMakeLists.txt..."
-          CMAKE_FILE=$(find . -name "CMakeLists.txt" -not -path "*/.*" | head -n 1)
-          CMAKE_DIR=$(dirname "$CMAKE_FILE")
-          echo "Ficheiro encontrado em: $CMAKE_FILE"
-          echo "Diretório do CMake: $CMAKE_DIR"
+          echo "A procurar o CMakeLists.txt em todo o repositório..."
+          find . -name "CMakeLists.txt"
+          
+          # Vamos testar encontrar o diretório correto de forma infalível
+          CMAKE_DIR=$(find . -name "CMakeLists.txt" -not -path "*/.*" -exec dirname {} \; | head -n 1)
+          
+          if [ -z "$CMAKE_DIR" ]; then
+            echo "CMakeLists.txt não encontrado pelas buscas normais, a usar a pasta smmfmfmt ou raiz..."
+            CMAKE_DIR="."
+          fi
+          
+          echo "Diretório selecionado para o CMake: $CMAKE_DIR"
           
           echo "A iniciar a compilação..."
           cmake -B build -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
