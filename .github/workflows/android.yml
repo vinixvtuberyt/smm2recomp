@@ -45,16 +45,18 @@ jobs:
             cp -r romfs_extracted/exefs/* build/exefs/
           fi
 
-            - name: Compile Android APK
-       run: |
-          echo "A listar a estrutura da raiz para encontrar o projeto..."
+      - name: Compile Android APK
+        run: |
+          echo "A listar o conteúdo atual da raiz..."
           ls -la
           
           echo "A iniciar a compilação..."
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j$(nproc)
           
-          find build -name "*.apk" -exec cp {} ./ \;
+          echo "A procurar por ficheiros APK gerados em todo o workspace..."
+          find . -name "*.apk" -exec cp {} ./ \;
+          ls -la
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
