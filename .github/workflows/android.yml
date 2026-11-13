@@ -47,14 +47,17 @@ jobs:
 
       - name: Compile Android APK
         run: |
-          echo "A listar o conteúdo atual da raiz..."
-          ls -la
+          echo "A procurar onde está o CMakeLists.txt..."
+          CMAKE_FILE=$(find . -name "CMakeLists.txt" -not -path "*/.*" | head -n 1)
+          CMAKE_DIR=$(dirname "$CMAKE_FILE")
+          echo "Ficheiro encontrado em: $CMAKE_FILE"
+          echo "Diretório do CMake: $CMAKE_DIR"
           
           echo "A iniciar a compilação..."
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j$(nproc)
           
-          echo "A procurar por ficheiros APK gerados em todo o workspace..."
+          echo "A procurar por ficheiros APK gerados..."
           find . -name "*.apk" -exec cp {} ./ \;
           ls -la
 
