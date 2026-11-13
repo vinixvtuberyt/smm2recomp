@@ -47,11 +47,12 @@ jobs:
 
       - name: Compile Android APK
         run: |
-          echo "A verificar onde está o CMakeLists.txt..."
-          find . -name "CMakeLists.txt"
+          echo "A localizar a pasta exata do CMakeLists.txt..."
+          CMAKE_DIR=$(dirname $(find . -name "CMakeLists.txt" -not -path "*/.*" | head -n 1))
+          echo "Encontrado em: $CMAKE_DIR"
           
           echo "A iniciar a compilação..."
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
           cmake --build build -j$(nproc)
           
           find build -name "*.apk" -exec cp {} ./ \;
