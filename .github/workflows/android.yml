@@ -19,25 +19,25 @@ jobs:
         run: |
           echo "A configurar o ambiente de compilação..."
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential
+          sudo apt-get install -y cmake ninja-build build-essential python3-pip
+          pip install --no-cache-dir gdown
 
       - name: Download and Extract ROM Assets from Google Drive
         env:
           ROM_ASSETS_URL: ${{ secrets.ROM_ASSETS_URL }}
         run: |
-          echo "A descarregar os assets do Google Drive..."
+          echo "A descarregar o ficheiro de 2.55 GB com o gdown..."
           mkdir -p rom_download romfs_extracted
           
-          # Descarregar diretamente com o parâmetro de confirmação
-          wget -O rom_download/smm2.zip "$ROM_ASSETS_URL"
+          # O gdown trata automaticamente de ficheiros grandes e ecrãs de confirmação do Google Drive
+          gdown "$ROM_ASSETS_URL" -O rom_download/smm2.zip
           
-          echo "A verificar se o ficheiro é um zip válido..."
-          if file rom_download/smm2.zip | grep -q "HTML"; then
-            echo "ERRO: O link ainda está a devolver HTML. Verifica se o link do Google Drive está público."
+          if [ ! -f "rom_download/smm2.zip" ]; then
+            echo "ERRO: O download falhou!"
             exit 1
           fi
           
-          echo "A extrair o ficheiro .zip..."
+          echo "A extrair o ficheiro .zip (isto pode demorar alguns segundos devido ao tamanho)..."
           unzip -q rom_download/smm2.zip -d romfs_extracted/
           
           if [ -d "romfs_extracted/smm2_assets/exefs" ]; then
