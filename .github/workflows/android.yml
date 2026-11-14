@@ -28,7 +28,15 @@ jobs:
           echo "A descarregar os assets do Google Drive..."
           mkdir -p rom_download romfs_extracted
           
-          curl -L -o rom_download/smm2.zip "$ROM_ASSETS_URL"
+          # Descarregar seguindo redirecionamentos do Google Drive
+          curl -c ./cookie -s -L "$ROM_ASSETS_URL" > rom_download/smm2.zip
+          
+          # Verificar se o ficheiro descarregado é um HTML de aviso
+          if head -n 1 rom_download/smm2.zip | grep -q "<html"; then
+            echo "ERRO: O link do Google Drive devolveu uma página HTML em vez do ficheiro .zip!"
+            echo "Certifica-te de que o link do Google Drive está configurado para acesso público e usa o formato de download direto (uc?export=download&id=...)."
+            exit 1
+          fi
           
           echo "A extrair o ficheiro .zip..."
           unzip -q rom_download/smm2.zip -d romfs_extracted/
