@@ -28,15 +28,9 @@ jobs:
           echo "A descarregar os assets do Google Drive..."
           mkdir -p rom_download romfs_extracted
           
-          # Descarregar seguindo redirecionamentos do Google Drive
-          curl -c ./cookie -s -L "$ROM_ASSETS_URL" > rom_download/smm2.zip
-          
-          # Verificar se o ficheiro descarregado é um HTML de aviso
-          if head -n 1 rom_download/smm2.zip | grep -q "<html"; then
-            echo "ERRO: O link do Google Drive devolveu uma página HTML em vez do ficheiro .zip!"
-            echo "Certifica-te de que o link do Google Drive está configurado para acesso público e usa o formato de download direto (uc?export=download&id=...)."
-            exit 1
-          fi
+          # Forçar o download direto do Google Drive contornando avisos de vírus/tamanho
+          CONFIRM=$(wget --quiet --save-cookies ./cookies.txt --keep-session-cookies --no-check-certificate "$ROM_ASSETS_URL" -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
+          wget --load-cookies ./cookies.txt "https://drive.google.com/uc?export=download&confirm=$CONFIRM&id=11BpEyD5jrRYvMOGt4NB8jh4NQan6gAsF" -O rom_download/smm2.zip
           
           echo "A extrair o ficheiro .zip..."
           unzip -q rom_download/smm2.zip -d romfs_extracted/
