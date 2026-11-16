@@ -25,19 +25,25 @@ jobs:
         env:
           ROM_ASSETS_URL: ${{ secrets.ROM_ASSETS_URL }}
         run: |
-          echo "A obter o link direto de download do MediaFire..."
+          echo "A extrair o link direto de download do MediaFire..."
           mkdir -p rom_download romfs_extracted
           
-          # Extrair o URL de download direto da página do MediaFire
-          DIRECT_URL=$(curl -s "$ROM_ASSETS_URL" | grep -o 'https://download.*\.mediafire.com/[^"]*' | head -n 1)
+          # Obter o link direto real através do HTML da página do MediaFire
+          DIRECT_URL=$(curl -s "$ROM_ASSETS_URL" | grep -o 'https://download[0-9]*\.mediafire.com/[^"]*' | head -n 1)
           
           if [ -z "$DIRECT_URL" ]; then
-            echo "Aviso: A extração automática falhou, a tentar o link direto alternativo..."
+            echo "Aviso: A expressão regular não encontrou o link, a usar o URL fornecido..."
             DIRECT_URL="$ROM_ASSETS_URL"
           fi
           
-          echo "A descarregar o ficheiro..."
+          echo "A descarregar o ficheiro a partir de: $DIRECT_URL"
           curl -L -o rom_download/smm2.zip "$DIRECT_URL"
+          
+          # Verificar se o ficheiro descarregado é HTML
+          if head -n 1 rom_download/smm2.zip | grep -q "<html"; then
+            echo "ERRO: O ficheiro descarregado é uma página HTML e não o .zip!"
+            exit 1
+          fi
           
           echo "A extrair o ficheiro .zip..."
           unzip -q rom_download/smm2.zip -d romfs_extracted/
