@@ -19,17 +19,25 @@ jobs:
         run: |
           echo "A configurar o ambiente de compilação..."
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential
+          sudo apt-get install -y cmake ninja-build build-essential curl
 
       - name: Download and Extract ROM Assets from MediaFire
         env:
           ROM_ASSETS_URL: ${{ secrets.ROM_ASSETS_URL }}
         run: |
-          echo "A descarregar os assets do MediaFire..."
+          echo "A obter o link direto de download do MediaFire..."
           mkdir -p rom_download romfs_extracted
           
-          # Descarregar diretamente do MediaFire
-          wget -O rom_download/smm2.zip "$ROM_ASSETS_URL"
+          # Extrair o URL de download direto da página do MediaFire
+          DIRECT_URL=$(curl -s "$ROM_ASSETS_URL" | grep -o 'https://download.*\.mediafire.com/[^"]*' | head -n 1)
+          
+          if [ -z "$DIRECT_URL" ]; then
+            echo "Aviso: A extração automática falhou, a tentar o link direto alternativo..."
+            DIRECT_URL="$ROM_ASSETS_URL"
+          fi
+          
+          echo "A descarregar o ficheiro..."
+          curl -L -o rom_download/smm2.zip "$DIRECT_URL"
           
           echo "A extrair o ficheiro .zip..."
           unzip -q rom_download/smm2.zip -d romfs_extracted/
