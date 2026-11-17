@@ -38,7 +38,6 @@ jobs:
             mv romfs_extracted/smm2_assets/* romfs_extracted/
           fi
           
-          # Colocar os assets na pasta onde o recomp os espera (geralmente na raiz ou numa pasta de assets)
           mkdir -p assets romfs exefs
           if [ -d "romfs_extracted/romfs" ]; then
             cp -r romfs_extracted/romfs/* romfs/
@@ -49,24 +48,19 @@ jobs:
 
       - name: Compile Android APK via Recomp Script
         run: |
-          echo "A verificar os scripts disponíveis..."
-          ls -la scripts/
-          
-          # Se houver um script de build para android na pasta scripts, executamo-lo
+          echo "A executar o script de compilação..."
           if [ -f "scripts/build_android.py" ]; then
             python3 scripts/build_android.py
           elif [ -f "build.py" ]; then
             python3 build.py
           else
-            echo "A procurar scripts de compilação alternativos..."
             python3 -m pip install --upgrade pip
-            # Tenta executar o script principal se existir
-            find . -maxdepth 2 -name "*.py"
+            # Procura e executa qualquer script python de build na raiz ou scripts
+            python3 -c "import glob; print(glob.glob('**/*.py', recursive=True))"
           fi
           
-          echo "A procurar por ficheiros APK gerados..."
-          find . -name "*.apk" -exec cp {} ./ \;
-          ls -la
+          echo "A procurar por todos os ficheiros APK gerados no sistema..."
+          find . -name "*.apk" -print
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -75,3 +69,6 @@ jobs:
           path: |
             *.apk
             **/*.apk
+            **/build/**/*.apk
+            **/bin/**/*.apk
+            dist/*.apk
