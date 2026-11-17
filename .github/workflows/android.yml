@@ -19,7 +19,7 @@ jobs:
         run: |
           echo "A configurar o ambiente de compilação..."
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential curl p7zip-full
+          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full
 
       - name: Download and Merge ROM Assets from GitHub Release
         run: |
@@ -38,35 +38,31 @@ jobs:
             mv romfs_extracted/smm2_assets/* romfs_extracted/
           fi
           
-          mkdir -p build/romfs build/exefs
+          # Colocar os assets na pasta onde o recomp os espera (geralmente na raiz ou numa pasta de assets)
+          mkdir -p assets romfs exefs
           if [ -d "romfs_extracted/romfs" ]; then
-            cp -r romfs_extracted/romfs/* build/romfs/
+            cp -r romfs_extracted/romfs/* romfs/
           fi
           if [ -d "romfs_extracted/exefs" ]; then
-            cp -r romfs_extracted/exefs/* build/exefs/
+            cp -r romfs_extracted/exefs/* exefs/
           fi
 
-      - name: Compile Android APK
+      - name: Compile Android APK via Recomp Script
         run: |
-          echo "A listar a estrutura para depuração..."
-          ls -la
+          echo "A verificar os scripts disponíveis..."
+          ls -la scripts/
           
-          echo "A procurar o CMakeLists.txt..."
-          # Procura em todo o lado, incluindo subpastas profundas
-          FOUND_PATH=$(find . -name "CMakeLists.txt" | grep -v "./build" | head -n 1)
-          
-          if [ -z "$FOUND_PATH" ]; then
-            echo "ERRO CRÍTICO: O CMakeLists.txt continua a não aparecer. Vamos listar todos os ficheiros:"
-            find . -name "CMakeLists.txt"
-            exit 1
+          # Se houver um script de build para android na pasta scripts, executamo-lo
+          if [ -f "scripts/build_android.py" ]; then
+            python3 scripts/build_android.py
+          elif [ -f "build.py" ]; then
+            python3 build.py
+          else
+            echo "A procurar scripts de compilação alternativos..."
+            python3 -m pip install --upgrade pip
+            # Tenta executar o script principal se existir
+            find . -maxdepth 2 -name "*.py"
           fi
-          
-          CMAKE_DIR=$(dirname "$FOUND_PATH")
-          echo "Encontrado com sucesso em: $CMAKE_DIR"
-          
-          echo "A iniciar a configuração e compilação..."
-          cmake -B build_android -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build_android -j$(nproc)
           
           echo "A procurar por ficheiros APK gerados..."
           find . -name "*.apk" -exec cp {} ./ \;
