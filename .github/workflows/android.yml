@@ -19,7 +19,7 @@ jobs:
         run: |
           echo "A configurar o ambiente..."
           sudo apt-get update
-          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full
+          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full cmake ninja-build
 
       - name: Download and Merge ROM Assets from GitHub Release
         run: |
@@ -45,25 +45,23 @@ jobs:
             cp -r romfs_extracted/exefs/* exefs/
           fi
 
-      - name: Compile Android APK via Dynamic Python Discovery
+      - name: Inspect Repository Structure & Compile
         run: |
-          echo "A listar os ficheiros Python disponíveis no repositório..."
-          find . -name "*.py" -not -path "*/.*"
+          echo "=== LISTAGEM DE FICHEIROS NA RAIZ ==="
+          ls -la
           
-          echo "A executar o script de build detetado..."
-          # Procura por qualquer script python de build ou compilação e executa-o
-          BUILD_SCRIPT=$(find . -name "build*.py" -not -path "*/.*" | head -n 1)
+          echo "=== A PROCURAR CMakeLists.txt EM TODAS AS PASTAS ==="
+          find . -name "CMakeLists.txt"
           
-          if [ -n "$BUILD_SCRIPT" ]; then
-            echo "A executar: python3 $BUILD_SCRIPT"
-            python3 "$BUILD_SCRIPT"
-          else
-            echo "Aviso: Nenhum script build*.py encontrado, a listar raiz..."
-            ls -la
+          echo "=== A TENTAR COMPILAÇÃO VIA CMAKE/MAKE SE EXISTIR ==="
+          if [ -f "CMakeLists.txt" ] || [ -n "$(find . -maxdepth 2 -name 'CMakeLists.txt')" ]; then
+            mkdir -p build_cmake
+            cmake -B build_cmake -DCMAKE_BUILD_TYPE=Release
+            cmake --build build_cmake -j$(nproc)
           fi
           
-          echo "A procurar por qualquer APK ou binário gerado..."
-          find . -name "*.apk" -o -name "*.bin" -o -name "*.elf"
+          echo "=== A PROCURAR POR QUALQUER APK GERADO ==="
+          find . -name "*.apk" -o -name "*.so" -o -name "*.elf"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -73,6 +71,6 @@ jobs:
             *.apk
             **/*.apk
             **/build/**/*.apk
-            **/dist/**/*.apk
-            build/
-            out/
+            **/bin/**/*.apk
+            dist/*.apk
+            out/*.apk
