@@ -42,26 +42,27 @@ jobs:
           if [ -d "romfs_extracted/romfs" ]; then
             cp -r romfs_extracted/romfs/* build/romfs/
           fi
-          if [ -d "romfs_extracted/romfs" ]; then
-            cp -r romfs_extracted/romfs/* build/romfs/
-          fi
           if [ -d "romfs_extracted/exefs" ]; then
             cp -r romfs_extracted/exefs/* build/exefs/
           fi
 
       - name: Compile Android APK
         run: |
-          echo "A procurar o CMakeLists.txt de forma alargada..."
-          # Procura qualquer CMakeLists.txt excluindo pastas do sistema/git
-          FOUND_PATH=$(find . -name "CMakeLists.txt" -not -path "*/.*" -not -path "./build/*" | head -n 1)
+          echo "A listar a estrutura para depuração..."
+          ls -la
+          
+          echo "A procurar o CMakeLists.txt..."
+          # Procura em todo o lado, incluindo subpastas profundas
+          FOUND_PATH=$(find . -name "CMakeLists.txt" | grep -v "./build" | head -n 1)
           
           if [ -z "$FOUND_PATH" ]; then
-            echo "ERRO: O CMakeLists.txt não foi encontrado!"
+            echo "ERRO CRÍTICO: O CMakeLists.txt continua a não aparecer. Vamos listar todos os ficheiros:"
+            find . -name "CMakeLists.txt"
             exit 1
           fi
           
           CMAKE_DIR=$(dirname "$FOUND_PATH")
-          echo "Encontrado em: $CMAKE_DIR"
+          echo "Encontrado com sucesso em: $CMAKE_DIR"
           
           echo "A iniciar a configuração e compilação..."
           cmake -B build_android -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
