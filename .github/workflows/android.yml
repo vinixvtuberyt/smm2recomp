@@ -19,34 +19,22 @@ jobs:
         run: |
           echo "A configurar o ambiente de compilação..."
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential curl
+          sudo apt-get install -y cmake ninja-build build-essential curl p7zip-full
 
-      - name: Download and Extract ROM Assets from MediaFire
-        env:
-          ROM_ASSETS_URL: ${{ secrets.ROM_ASSETS_URL }}
+      - name: Download and Merge ROM Assets from GitHub Release
         run: |
-          echo "A extrair o link direto de download do MediaFire..."
+          echo "A descarregar as partes dos assets da Release do GitHub..."
           mkdir -p rom_download romfs_extracted
           
-          # Obter o link direto real através do HTML da página do MediaFire
-          DIRECT_URL=$(curl -s "$ROM_ASSETS_URL" | grep -o 'https://download[0-9]*\.mediafire.com/[^"]*' | head -n 1)
+          # Descarregar a parte 1 e a parte 2 diretamente da Release v1.0
+          curl -L -o rom_download/smm2_assets.zip.001 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.001"
+          curl -L -o rom_download/smm2_assets.zip.002 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.002"
           
-          if [ -z "$DIRECT_URL" ]; then
-            echo "Aviso: A expressão regular não encontrou o link, a usar o URL fornecido..."
-            DIRECT_URL="$ROM_ASSETS_URL"
-          fi
-          
-          echo "A descarregar o ficheiro a partir de: $DIRECT_URL"
-          curl -L -o rom_download/smm2.zip "$DIRECT_URL"
-          
-          # Verificar se o ficheiro descarregado é HTML
-          if head -n 1 rom_download/smm2.zip | grep -q "<html"; then
-            echo "ERRO: O ficheiro descarregado é uma página HTML e não o .zip!"
-            exit 1
-          fi
-          
-          echo "A extrair o ficheiro .zip..."
-          unzip -q rom_download/smm2.zip -d romfs_extracted/
+          echo "A juntar e a extrair o arquivo dividido..."
+          cd rom_download
+          # O 7z junta as partes e extrai automaticamente o .zip original
+          7z x smm2_assets.zip.001 -o../romfs_extracted/
+          cd ..
           
           if [ -d "romfs_extracted/smm2_assets/exefs" ]; then
             mv romfs_extracted/smm2_assets/* romfs_extracted/
