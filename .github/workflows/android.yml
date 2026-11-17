@@ -45,22 +45,22 @@ jobs:
             cp -r romfs_extracted/exefs/* exefs/
           fi
 
-      - name: Compile Android APK via Python Build Script
+      - name: Compile Android APK via Dynamic Python Discovery
         run: |
-          echo "A executar o script de compilação..."
-          python3 -m pip install --upgrade pip
+          echo "A listar os ficheiros Python disponíveis no repositório..."
+          find . -name "*.py" -not -path "*/.*"
           
-          # Executa o script principal de build do recomp
-          if [ -f "scripts/build.py" ]; then
-            python3 scripts/build.py
-          elif [ -f "build.py" ]; then
-            python3 build.py
+          echo "A executar o script de build detetado..."
+          # Procura por qualquer script python de build ou compilação e executa-o
+          BUILD_SCRIPT=$(find . -name "build*.py" -not -path "*/.*" | head -n 1)
+          
+          if [ -n "$BUILD_SCRIPT" ]; then
+            echo "A executar: python3 $BUILD_SCRIPT"
+            python3 "$BUILD_SCRIPT"
           else
-            python3 scripts/build_android.py || python3 build_android.py
+            echo "Aviso: Nenhum script build*.py encontrado, a listar raiz..."
+            ls -la
           fi
-          
-          echo "--- LISTAGEM DE TODOS OS FICHEIROS CRIADOS RECENTEMENTE ---"
-          find . -maxdepth 3 -not -path "*/.*" -not -path "./romfs_extracted*" -not -path "./rom_download*"
           
           echo "A procurar por qualquer APK ou binário gerado..."
           find . -name "*.apk" -o -name "*.bin" -o -name "*.elf"
