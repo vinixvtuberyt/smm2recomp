@@ -15,62 +15,14 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Environment & Dependencies
+      - name: Read Build Instructions & Scripts
         run: |
-          echo "A configurar o ambiente..."
-          sudo apt-get update
-          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full cmake ninja-build
-
-      - name: Download and Merge ROM Assets from GitHub Release
-        run: |
-          echo "A descarregar os assets da Release..."
-          mkdir -p rom_download romfs_extracted
+          echo "=== CONTEÚDO DO README.md ==="
+          cat README.md
           
-          curl -L -o rom_download/smm2_assets.zip.001 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.001"
-          curl -L -o rom_download/smm2_assets.zip.002 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.002"
+          echo "=== FICHEIROS EM SCRIPTS, RECOMP E CORE ==="
+          ls -la scripts/ recomp/ core/ tools/
           
-          cd rom_download
-          7z x smm2_assets.zip.001 -o../romfs_extracted/
-          cd ..
-          
-          if [ -d "romfs_extracted/smm2_assets/exefs" ]; then
-            mv romfs_extracted/smm2_assets/* romfs_extracted/
-          fi
-          
-          mkdir -p assets romfs exefs
-          if [ -d "romfs_extracted/romfs" ]; then
-            cp -r romfs_extracted/romfs/* romfs/
-          fi
-          if [ -d "romfs_extracted/exefs" ]; then
-            cp -r romfs_extracted/exefs/* exefs/
-          fi
-
-      - name: Inspect Repository Structure & Compile
-        run: |
-          echo "=== LISTAGEM DE FICHEIROS NA RAIZ ==="
-          ls -la
-          
-          echo "=== A PROCURAR CMakeLists.txt EM TODAS AS PASTAS ==="
-          find . -name "CMakeLists.txt"
-          
-          echo "=== A TENTAR COMPILAÇÃO VIA CMAKE/MAKE SE EXISTIR ==="
-          if [ -f "CMakeLists.txt" ] || [ -n "$(find . -maxdepth 2 -name 'CMakeLists.txt')" ]; then
-            mkdir -p build_cmake
-            cmake -B build_cmake -DCMAKE_BUILD_TYPE=Release
-            cmake --build build_cmake -j$(nproc)
-          fi
-          
-          echo "=== A PROCURAR POR QUALQUER APK GERADO ==="
-          find . -name "*.apk" -o -name "*.so" -o -name "*.elf"
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: smm2-android-apk
-          path: |
-            *.apk
-            **/*.apk
-            **/build/**/*.apk
-            **/bin/**/*.apk
-            dist/*.apk
-            out/*.apk
+          echo "=== OUTROS WORKFLOWS DO REPOSITÓRIO ==="
+          ls -la .github/workflows/
+          cat .github/workflows/release.yml || true
