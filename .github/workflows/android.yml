@@ -17,19 +17,18 @@ jobs:
 
       - name: Set up Environment & Dependencies
         run: |
-          echo "A configurar o ambiente de compilação..."
+          echo "A configurar o ambiente..."
           sudo apt-get update
-          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full android-sdk-common
+          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full
 
       - name: Download and Merge ROM Assets from GitHub Release
         run: |
-          echo "A descarregar as partes dos assets da Release do GitHub..."
+          echo "A descarregar os assets da Release..."
           mkdir -p rom_download romfs_extracted
           
           curl -L -o rom_download/smm2_assets.zip.001 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.001"
           curl -L -o rom_download/smm2_assets.zip.002 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.002"
           
-          echo "A juntar e a extrair o arquivo dividido..."
           cd rom_download
           7z x smm2_assets.zip.001 -o../romfs_extracted/
           cd ..
@@ -48,22 +47,23 @@ jobs:
 
       - name: Compile Android APK via Python Build Script
         run: |
-          echo "A listar a pasta de scripts e raiz para identificar o comando de build..."
-          ls -la scripts/
+          echo "A executar o script de compilação..."
+          python3 -m pip install --upgrade pip
           
-          echo "A executar o script de empacotamento/build para Android..."
-          # A maioria dos repos recomp usa um script específico para gerar o APK
+          # Executa o script principal de build do recomp
           if [ -f "scripts/build.py" ]; then
-            python3 scripts/build.py --platform android
+            python3 scripts/build.py
           elif [ -f "build.py" ]; then
-            python3 build.py --platform android
+            python3 build.py
           else
-            # Tenta correr todos os scripts python disponíveis que tenham 'build' no nome
-            python3 scripts/*.py || true
+            python3 scripts/build_android.py || python3 build_android.py
           fi
           
-          echo "A procurar exaustivamente por qualquer ficheiro APK ou ELF gerado..."
-          find . -name "*.apk" -o -name "*.elf" -o -name "*.so"
+          echo "--- LISTAGEM DE TODOS OS FICHEIROS CRIADOS RECENTEMENTE ---"
+          find . -maxdepth 3 -not -path "*/.*" -not -path "./romfs_extracted*" -not -path "./rom_download*"
+          
+          echo "A procurar por qualquer APK ou binário gerado..."
+          find . -name "*.apk" -o -name "*.bin" -o -name "*.elf"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -73,6 +73,6 @@ jobs:
             *.apk
             **/*.apk
             **/build/**/*.apk
-            **/bin/**/*.apk
-            dist/*.apk
-            output/*.apk
+            **/dist/**/*.apk
+            build/
+            out/
