@@ -26,13 +26,11 @@ jobs:
           echo "A descarregar as partes dos assets da Release do GitHub..."
           mkdir -p rom_download romfs_extracted
           
-          # Descarregar a parte 1 e a parte 2 diretamente da Release v1.0
           curl -L -o rom_download/smm2_assets.zip.001 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.001"
           curl -L -o rom_download/smm2_assets.zip.002 "https://github.com/${{ github.repository }}/releases/download/v1.0/smm2_assets.zip.002"
           
           echo "A juntar e a extrair o arquivo dividido..."
           cd rom_download
-          # O 7z junta as partes e extrai automaticamente o .zip original
           7z x smm2_assets.zip.001 -o../romfs_extracted/
           cd ..
           
@@ -44,26 +42,30 @@ jobs:
           if [ -d "romfs_extracted/romfs" ]; then
             cp -r romfs_extracted/romfs/* build/romfs/
           fi
+          if [ -d "romfs_extracted/romfs" ]; then
+            cp -r romfs_extracted/romfs/* build/romfs/
+          fi
           if [ -d "romfs_extracted/exefs" ]; then
             cp -r romfs_extracted/exefs/* build/exefs/
           fi
 
       - name: Compile Android APK
         run: |
-          echo "A procurar o CMakeLists.txt em todo o workspace..."
-          FOUND_PATH=$(find . -name "CMakeLists.txt" -not -path "*/.*" | head -n 1)
+          echo "A procurar o CMakeLists.txt de forma alargada..."
+          # Procura qualquer CMakeLists.txt excluindo pastas do sistema/git
+          FOUND_PATH=$(find . -name "CMakeLists.txt" -not -path "*/.*" -not -path "./build/*" | head -n 1)
           
           if [ -z "$FOUND_PATH" ]; then
-            echo "ERRO: O CMakeLists.txt não foi encontrado em nenhuma pasta!"
+            echo "ERRO: O CMakeLists.txt não foi encontrado!"
             exit 1
           fi
           
           CMAKE_DIR=$(dirname "$FOUND_PATH")
-          echo "Encontrado com sucesso em: $CMAKE_DIR"
+          echo "Encontrado em: $CMAKE_DIR"
           
-          echo "A iniciar a compilação..."
-          cmake -B build -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j$(nproc)
+          echo "A iniciar a configuração e compilação..."
+          cmake -B build_android -S "$CMAKE_DIR" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_android -j$(nproc)
           
           echo "A procurar por ficheiros APK gerados..."
           find . -name "*.apk" -exec cp {} ./ \;
@@ -75,4 +77,4 @@ jobs:
           name: smm2-android-apk
           path: |
             *.apk
-            build/**/*.apk
+            **/*.apk
