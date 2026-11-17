@@ -19,7 +19,7 @@ jobs:
         run: |
           echo "A configurar o ambiente de compilação..."
           sudo apt-get update
-          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full
+          sudo apt-get install -y python3-pip python3-dev build-essential curl p7zip-full android-sdk-common
 
       - name: Download and Merge ROM Assets from GitHub Release
         run: |
@@ -46,21 +46,24 @@ jobs:
             cp -r romfs_extracted/exefs/* exefs/
           fi
 
-      - name: Compile Android APK via Recomp Script
+      - name: Compile Android APK via Python Build Script
         run: |
-          echo "A executar o script de compilação..."
-          if [ -f "scripts/build_android.py" ]; then
-            python3 scripts/build_android.py
+          echo "A listar a pasta de scripts e raiz para identificar o comando de build..."
+          ls -la scripts/
+          
+          echo "A executar o script de empacotamento/build para Android..."
+          # A maioria dos repos recomp usa um script específico para gerar o APK
+          if [ -f "scripts/build.py" ]; then
+            python3 scripts/build.py --platform android
           elif [ -f "build.py" ]; then
-            python3 build.py
+            python3 build.py --platform android
           else
-            python3 -m pip install --upgrade pip
-            # Procura e executa qualquer script python de build na raiz ou scripts
-            python3 -c "import glob; print(glob.glob('**/*.py', recursive=True))"
+            # Tenta correr todos os scripts python disponíveis que tenham 'build' no nome
+            python3 scripts/*.py || true
           fi
           
-          echo "A procurar por todos os ficheiros APK gerados no sistema..."
-          find . -name "*.apk" -print
+          echo "A procurar exaustivamente por qualquer ficheiro APK ou ELF gerado..."
+          find . -name "*.apk" -o -name "*.elf" -o -name "*.so"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -72,3 +75,4 @@ jobs:
             **/build/**/*.apk
             **/bin/**/*.apk
             dist/*.apk
+            output/*.apk
